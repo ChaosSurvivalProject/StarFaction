@@ -1,0 +1,7 @@
+*.class
+build/
+.gradle/
+run/
+logs/
+.blockforge-cache/
+libs/

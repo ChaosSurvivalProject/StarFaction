@@ -1,0 +1,107 @@
+# ============================================================
+#  星穹旅驿 · 阵营选择插件 StarFaction 配置
+#  所有数字均可在此修改，插件内无任何硬编码；每项都有中文注释，
+#  写错格式会打印警告并用括号内的默认值兜底，不会导致插件启动失败。
+# ============================================================
+
+# ---------- 阵营选择节奏 ----------
+choose:
+  # 新玩家“累计在线”满多少分钟后弹出阵营选择窗（此前的自由探索时间零打扰，
+  # 期间不会有弹窗/提示刷屏；改小可更快看到流程）
+  delay-minutes: 10
+  # 掉线（下线）时段是否计入累计在线：true=按上次离线时间锚点补齐；false=只算真实在线秒数
+  count-offline: true
+  # 玩家点“稍后再说”之后，每隔多少分钟再次提醒（不选阵营也能一直自由游玩）
+  reminder-interval: 5
+
+# ---------- 基础物资（选择瞬间必发；背包满则掉落脚下，不丢失） ----------
+# 格式：材料名:数量 （材料名 = Bukkit Material 枚举名，可在互联网查任意材质列表）
+starter-kit:
+  - WOODEN_SWORD:1
+  - BREAD:8
+
+# ---------- 阵营绑定世界（世界名 = 服务端世界文件夹名，不要硬编码在别处） ----------
+dawn-world: "炽壤"
+dusk-world: "渊域"
+
+# ---------- 昼夜buff（只给采集/生存向，绝不给力量/抗性/速度等战斗效果） ----------
+buff:
+  dawn:
+    # 黎明阵营：身处「dawn-world」世界且该世界为白天时生效
+    # 格式 效果名:等级（HASTE=急迫/挖掘加速，SATURATION=饱和）
+    effects:
+      - HASTE:1
+      - SATURATION:1
+  dusk:
+    # 暮夜阵营：身处「dusk-world」世界且该世界为黑夜时生效
+    # （NIGHT_VISION=夜视；两边都含 HASTE:1 完全对称）
+    effects:
+      - HASTE:1
+      - NIGHT_VISION:1
+  # 每隔多少秒检查一次玩家所在世界与昼夜（5秒=足够及时，负担可忽略）
+  check-interval: 5
+  # 每次施加效果的持续秒数（任务会按检查间隔自动续施；SATURATION 属瞬时类效果，
+  # 靠“剩余时长不足两个检查周期就补施”实现持续生效）
+  effect-duration-seconds: 15
+  # 白天判定：world.getTime() 落在 [day-start, day-end) 视为白天，其余为黑夜
+  # 原生昼夜周期为 24000 tick（约20分钟）；边界值可按模组世界调整
+  day-start: 0
+  day-end: 12000
+
+# ---------- 人数平衡补偿（防“一边倒”，只给加入劣势阵营的新人） ----------
+balance:
+  enabled: true
+  # 人数差比例 = |A-B| / max(A,B)（只统计在线且已选阵营玩家），超过该值才触发补偿
+  threshold: 0.2
+  # 最高补偿档位（防无限堆档）；分档方式：threshold→1.0 区间线性等分 max-tier 段，
+  # 例：threshold=0.2、max-tier=3 → [0.20,0.47)=1档，[0.47,0.73)=2档，[0.73,1.00]=3档
+  max-tier: 3
+  # 每一档的补偿物资（格式同 starter-kit；没配的档位自动逐级向下取）
+  tiers:
+    1:
+      - IRON_INGOT:2
+      - BREAD:4
+    2:
+      - IRON_INGOT:5
+      - GOLDEN_CARROT:3
+    3:
+      - DIAMOND:1
+      - GOLDEN_APPLE:2
+
+# ---------- 阵营锁定 / 防刷 ----------
+lock:
+  # 换阵营冷却天数（0 = 永不锁定；换阵营会立刻清空 compensate_tier 记录，
+  # 小号反复“选劣势方领补偿”被 冷却+清档 双重拦截）
+  switch-cooldown-days: 7
+
+# ---------- 身份标识四层 ----------
+identity:
+  dawn-prefix: "黎明"
+  dusk-prefix: "暮夜"
+  # 颜色取 Bukkit ChatColor 枚举名：GOLD / PURPLE / RED / AQUA / GREEN / YELLOW 等
+  dawn-color: GOLD
+  dusk-color: PURPLE
+  # 发光轮廓（Java 端生效；不支持的端会在首次失败时自动关闭并在日志告警）
+  show-glowing: true
+  # 聊天前缀：true 时聊天消息格式为 [黎明]玩家名: 消息（监听聊天事件实现，方案说明见 README）
+  chat-prefix: true
+
+# ---------- 数据库（单服/多服双模式） ----------
+database:
+  # sqlite = 单个后端服直接用文件；
+  # mysql  = Velocity 后挂多个后端服时必须用：所有后端服装本插件并连同一库，靠 join 重建实现跨服身份
+  type: sqlite
+  # ---- 仅 type: mysql 时生效。MySQL 端口改这里（无任何硬编码端口） ----
+  host: 127.0.0.1
+  port: 3306
+  database: starfaction
+  username: root
+  password: ""
+  # JDBC 驱动类名（默认新版驱动；若你的 MySQL 驱动是很老的 5.x 包，改成 com.mysql.jdbc.Driver）。
+  # 说明：Paper/Purpur 1.21.x 服务端会在插件类加载期把旧驱动名的“代码字面量”改写为新驱动名
+  # （官方兼容映射的一部分），写在这里的字符串不经过该改写，是指定旧驱动的唯一可靠途径。
+  mysql-driver: "com.mysql.cj.jdbc.Driver"
+  # ---- 仅 type: sqlite 时生效。相对路径按插件数据目录解析，默认 plugins/StarFaction/factions.db ----
+  sqlite-file: "factions.db"
+  # 表名（只允许字母数字下划线，非法字符会回退 faction_data）
+  table: faction_data

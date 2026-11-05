@@ -1,0 +1,25 @@
+# 星穹旅驿 · 阵营选择插件
+# 零第三方插件依赖：不声明 depend/softdepend（Geyser 仅运行期 Class.forName 探测，不写依赖）
+name: StarFaction
+main: com.starinn.faction.StarFaction
+version: 1.0.0-r2
+api-version: '1.21'
+author: StarInn
+description: 星穹旅驿·阵营选择（黎明/暮夜双阵营、身份四层、昼夜buff、人数平衡补偿）
+
+commands:
+  faction:
+    description: 星穹旅驿阵营主命令
+    usage: /<command> <choose|switch|info|reload|set>
+    aliases: [sf]
+
+permissions:
+  starfaction.use:
+    description: 使用 /faction choose|switch|info|later（默认所有玩家）
+    default: true
+  starfaction.reload:
+    description: 允许 /faction reload
+    default: op
+  starfaction.admin:
+    description: 允许 /faction set 强制设置玩家阵营（不受切换冷却限制）
+    default: op

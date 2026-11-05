@@ -1,0 +1,35 @@
+// 星穹旅驿 · 阵营选择插件 StarFaction
+// 构建要求：JDK 21，Gradle 8.x+
+plugins {
+    id 'java'
+}
+
+group = 'com.starinn.faction'
+version = '1.0.0-r2'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    // Paper/Purpur 服务端 API 仓库（仅编译期使用，产物不含任何第三方库）
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    // 纯 Bukkit/Paper API 编译依赖，compileOnly：不打进 jar、不产生运行时第三方依赖
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveBaseName = 'StarFaction'
+    // plugin.yml / config.yml 已在 src/main/resources 中，随 jar 根目录打包
+    exclude 'libs/**'
+}
