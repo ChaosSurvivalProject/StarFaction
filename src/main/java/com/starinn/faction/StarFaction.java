@@ -247,7 +247,10 @@ public final class StarFaction extends JavaPlugin implements CommandExecutor, Ta
         } catch (Throwable ignore) {
         }
         cfg = Cfg.load(this);
-        db = Database.create(this);
+        // BUGFIX: 内存降级模式下重建 Database 会得到全新空 cache，导致 reload 后所有玩家
+        // 阵营与在线时长被清空。此处保留原内存库实例（数据仍在其中），仅在非内存模式才重建。
+        boolean keepMemoryDb = db != null && db.memoryOnly();
+        if (!keepMemoryDb) db = Database.create(this);
         identity = new Identity(this);
         try {
             identity.setup();
@@ -346,8 +349,10 @@ public final class StarFaction extends JavaPlugin implements CommandExecutor, Ta
                     if (r != null) {
                         r.onlineSeconds += delta;
                         d.saveAsync(id.toString(), r);
+                        // BUGFIX: 仅当成功累加到缓存行时才滑动锚点；否则保留旧锚点待下次补算，
+                        // 避免缓存行尚未加载时该段在线时长被永久丢弃。
+                        sessionStart.put(id, now);
                     }
-                    sessionStart.put(id, now);
                 }
                 setPdcLong(pl, keyOnlineRef, now);
             } catch (Throwable t) {
@@ -601,7 +606,11 @@ public final class StarFaction extends JavaPlugin implements CommandExecutor, Ta
             }
             c.tierKits.clear();
             try {
-                for (String k : r.getConfigurationSection("balance.tiers").getKeys(false)) {
+                org.bukkit.configuration.ConfigurationSection tiersSec = r.getConfigurationSection("balance.tiers");
+                if (tiersSec == null) {
+                    p.getLogger().warning("[星穹旅驿] 配置缺少 balance.tiers 段，人数补偿物资已关闭");
+                } else {
+                for (String k : tiersSec.getKeys(false)) {
                     int tier;
                     try {
                         tier = Integer.parseInt(k.trim());
@@ -612,6 +621,7 @@ public final class StarFaction extends JavaPlugin implements CommandExecutor, Ta
                     if (tier < 1) continue;
                     List<ItemStack> kit = parseKit(p, r.getStringList("balance.tiers." + k), "balance.tiers." + k);
                     if (!kit.isEmpty()) c.tierKits.put(tier, kit);
+                }
                 }
             } catch (Throwable ignore) {
             }
@@ -2223,13 +2233,17 @@ public final class StarFaction extends JavaPlugin implements CommandExecutor, Ta
                 final Database d = p.db;
                 if (d == null) return;
                 d.loadAsync(id.toString(), row -> {
+                    // BUGFIX: 异步回调到达时玩家可能已退出；用离线 Player 引用会污染计分板，
+                    // 且 setGlowing 失败会把 Identity.glowingBroken 置真，导致全局发光永久关闭。
+                    Player cur = Bukkit.getPlayer(id);
+                    if (cur == null || !cur.isOnline()) return;
                     if (add > 0) row.onlineSeconds += add;
                     if (row.faction != null) {
                         // 老玩家：join 直接从库重读并重建四层（跨 Velocity 后端服靠每服 join 重建）
                         Identity i = p.identity;
                         BuffManager b = p.buffs;
-                        if (i != null) i.apply(pl, row.faction);
-                        if (b != null) b.checkPlayer(pl);
+                        if (i != null) i.apply(cur, row.faction);
+                        if (b != null) b.checkPlayer(cur);
                     }
                     // 未选阵营者不在此弹窗，交给 ReminderTask（保证“累计在线满阈值”判定一致）
                 });
