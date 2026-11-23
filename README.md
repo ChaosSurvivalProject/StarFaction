@@ -1,5 +1,10 @@
 # 星穹旅驿 · 阵营选择插件 StarFaction
 
+<p align="center">
+  <img src="assets/images/banner.png" alt="StarFaction 宣传图" width="820">
+</p>
+
+
 Purpur/Spigot/Paper **1.21.11**（Java 21）服务端插件。只做“阵营选择”这一件事：
 世界观讲解由 StarInn 插件负责，本插件与它互不干扰、零依赖。
 
@@ -14,6 +19,13 @@ Purpur/Spigot/Paper **1.21.11**（Java 21）服务端插件。只做“阵营选
 | 模块化降级 | 每个模块独立 try-catch；任一模块失败只在自检日志“降级N项”中体现，不影响其余功能，更不影响服务器启动 |
 
 ---
+
+## 效果预览
+
+<p align="center">
+  <img src="assets/images/demo.png" alt="StarFaction 演示图" width="720">
+</p>
+
 
 ## 安装
 
